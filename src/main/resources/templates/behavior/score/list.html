@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>行为评分表</title>
+    <script th:src="@{/jquery.min.js}" ></script>
+    <script th:src="@{/jquery-1.9.1.min.js}" ></script>
+    <!-- S  CSS -->
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        table {
+            border: 1px solid #3bafda;
+            margin: 100px auto;
+            text-align: center;
+            border-collapse: collapse;
+        }
+
+        table th {
+            border: 1px solid #3bafda;
+            padding: 10px;
+        }
+
+        table td {
+            border: 1px solid #48cfad;
+            padding: 4px 10px;
+        }
+    </style>
+    <!-- E  CSS -->
+</head>
+<body>
+<!-- S   好习惯表 -->
+<table id="tableId">
+    <caption> 好习惯表</caption>
+    <thead class="header">
+    </thead>
+    <tbody class="list">
+
+    </tbody>
+</table>
+<!-- S   课程表 -->
+</body>
+<script type="text/javascript">
+    $(function () {
+
+        // d是当前星期一的日期对象
+        var d=getMonDate();
+        var arr=[];
+        var headValue='<tr><th>时间</th>';
+        for(var i=0; i<7; i++) {
+            var month=d.getMonth()+1;
+            month =(month<10 ? "0"+month:month);
+            var getDate = (d.getDate()<10 ? "0"+d.getDate():d.getDate());
+            var dateFull = d.getFullYear()+'-'+month+'-'+getDate;
+            arr.push(dateFull);
+            var weekDay = getDayName(d.getDay());
+            headValue += ' <th data-date="'+dateFull+'">' +weekDay+ '</th>'
+            d.setDate(d.getDate()+1);
+        }
+        headValue +='<tr>';
+        $('.header').append(headValue);
+
+        var url = '/behavior/score/list';
+        $.ajax({
+            url: url,
+            type: 'get',
+            dataType: 'json',
+            success: function (resp) {
+                var flag = resp.success;
+
+                if (flag) {
+                    var list = resp.data;
+                    //获取数据成功后动态添加到页面中
+                    var textValue = '';
+                    for (var i = 0; i < list.length; i++) {
+                     /*   textValue = '<li class="right"><img class="imgright" src="' + onlinePathValue + '/favicon.ico"><span class="imgright">' + list[i].content + '</span></li>';
+*/
+                        textValue += '<tr><td>' + list[i].name + '</td>';
+                        var scores = list[i].behaviorScores;
+                        for (var j = 0; j < 7; j++) {
+                            if(scores.length>0){
+                                var score = exist(scores,arr[j]);
+                                if(score.length>0){
+                                    textValue += '<td data-date="'+arr[j]+'" data-behaviorId="'+list[i].behaviorId+'">' + score + '</td>';
+                                }else {
+                                    textValue += '<td data-date="'+arr[j]+'" data-behaviorId="'+list[i].behaviorId+'"></td>';
+                                }
+                            }else {
+                                textValue += '<td data-date="'+arr[j]+'" data-behaviorId="'+list[i].behaviorId+'"></td>';
+                            }
+                        }
+                        textValue += '</tr>';
+                    }
+
+                    $('.list').append(textValue);
+                }
+            }
+        });
+
+
+        // 获取当前星期的星期一的日期，返回的是一个Date对象。
+        function getMonDate()
+        {
+            var d=new Date(),
+                day=d.getDay(),
+                date=d.getDate();
+            if(day==1)
+                return d;
+            if(day==0)
+                d.setDate(date-7);
+            else
+                d.setDate(date-day);
+            return d;
+        }
+// 0-6转换成中文名称
+        function getDayName(day)
+        {
+            var day=parseInt(day);
+            if(isNaN(day) || day<0 || day>6)
+                return false;
+            var weekday=["星期天","星期一","星期二","星期三","星期四","星期五","星期六"];
+            return weekday[day];
+        }
+
+        function exist(scores,date) {
+            var exist = false;
+            var value = '';
+            for(var k = 0; k< scores.length; k++){
+                if(null != scores[k] && scores[k].date == date){
+                    exist = true;
+                    value = scores[k].score;
+                }
+            }
+
+            return value;
+
+        }
+
+
+
+
+        $('#tableId').on('dblclick','td',function(){
+            //console.info($(this).text());
+            var td_date = $(this).attr("data-date");
+            var td_behaviorId = $(this).attr("data-behaviorId");
+            var oldVal = $(this).text();
+            var input = "<input type='text' id='tmpId' value='" + oldVal + "' >";
+            $(this).text('');
+            $(this).append(input);
+            $('#tmpId').focus();
+            $('#tmpId').blur(function(){
+                if($(this).val() != ''){
+                    oldVal = $(this).val();
+                    if(oldVal=="A" ||oldVal=="B" ||oldVal=="C" ||oldVal=="D" ){
+                        var url = '/behavior/addScore?behaviorId='+td_behaviorId+'&score='+oldVal+'&date='+td_date;
+                        $.ajax({
+                            url: url,
+                            type: 'post',
+                            dataType: 'json',
+                            success: function (resp) {
+                                var flag = resp.success;
+
+                                if(!flag){
+                                    alert(resp.message);
+                                }
+                            }
+                        });
+                    }else {
+                        alert("请评A、B、C、D四个等级")
+                    }
+
+                }
+                window.location.reload();
+                //closest：是从当前元素开始，沿Dom树向上遍历直到找到已应用选择器的一个匹配为止。
+                //$(this).closest('td').text(oldVal);
+            });
+        });
+
+
+    });
+
+</script>
+</html>

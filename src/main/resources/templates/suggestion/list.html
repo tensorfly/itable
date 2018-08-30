@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>意见反馈列表页</title>
+    <script th:src="@{${onlinePathValue}+'/jquery.min.js'}" ></script>
+    <link th:href="@{${onlinePathValue}+'/list.css'}" rel="stylesheet" type="text/css"  media="all" />
+    <style type="text/css">
+        ul,li{list-style-type:none;padding:0;margin:0}
+        .page li{float:left;margin-left:10px}
+        .record{
+            overflow-y:auto; overflow-x:auto; height:670px;width:660px;
+        }
+        .suggestion{
+            width: 660px;
+        }
+
+        {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-family: '微软雅黑'
+        }
+
+        img {
+            width: 60px;
+            height: 60px;
+        }
+        .content {
+            font-size: 20px;
+            overflow: auto;
+            padding: 5px;
+        }
+        .content li {
+            margin-top: 10px;
+            padding-left: 10px;
+            width: 412px;
+            display: block;
+            clear: both;
+            overflow: hidden;
+        }
+        .content li img {
+            float: left;
+        }
+        .content li span{
+            background: #7cfc00;
+            padding: 10px;
+            border-radius: 10px;
+            float: left;
+            margin: 6px 10px 0 10px;
+            max-width: 310px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 3px #ccc;
+        }
+        .content li img.imgleft {
+            float: left;
+        }
+        .content li img.imgright {
+            float: right;
+        }
+        .content li span.spanleft {
+            float: left;
+            background: #fff;
+        }
+        .content li span.spanright {
+            float: right;
+            background: #7cfc00;
+        }
+        /*.left{float:left; width:50% ;}
+        .right{float:right; width:50% ;}*/
+    </style>
+</head>
+<body>
+<h1>意见反馈列表</h1>
+<div id="topic_list">
+    <div class="cell">
+        <table border=1>
+            <tr>
+                <td>序号</td>
+                <td>已读/未读</td>
+                <td style="width: 200px">设备ID</td>
+                <td style="width: 350px;">反馈内容</td>
+                <td>设备型号</td>
+                <td>联系方式</td>
+                <td style="width: 200px">发布时间</td>
+            </tr>
+            <div  th:each="suggestion,iterStat : ${list}">
+            <tr class="detail_url" th:title="${suggestion.devId}">
+                <td class="suggestion" th:text="${iterStat.index+1}"></td>
+                <td class="suggestion"  th:if="${suggestion.status} eq 1" th:text="已读"></td>
+                <td class="suggestion"  th:if="${suggestion.status} eq 0" th:text="未读"></td>
+                <td class="suggestion"  th:text="${suggestion.devId}"></td>
+                <td style="color: #357AE8" class="suggestion" th:text="${suggestion.content}"></td>
+                <td class="suggestion"  th:if="${suggestion.devType} eq 0" th:text="未知"></td>
+                <td class="suggestion"  th:if="${suggestion.devType} eq 1" th:text="ios"></td>
+                <td class="suggestion"  th:if="${suggestion.devType} eq 2" th:text="Android"></td>
+                <td class="suggestion" th:text="${suggestion.contactInformation}"></td>
+                <td class="suggestion" th:text="${#strings.substring(suggestion.createtime,0,19)}"></td>
+            </tr>
+            </div>
+        </table>
+    </div>
+</div>
+
+<div th:if=" ${totalPages} gt '1'" class="page">
+        <ul>
+            <li th:if="${not isFirstPage}">
+                <a th:if="${not isFirstPage}" th:href="@{${onlinePathValue+'/suggestion/list'}(pageNum=${pageNum-1},pageSize=${pageSize},title=${title})}">上一页</a>
+            </li>
+
+            <li th:each="pageNo : ${#numbers.sequence(1, totalPages)}">
+                <a th:if="${pageNum eq pageNo}" href="javascript:void(0);">
+                    <span th:text="${pageNo}"></span>
+                </a>
+
+                <a th:if="${not (pageNum eq pageNo)}" th:href="@{${onlinePathValue+'/suggestion/list'}(pageNum=${pageNo},pageSize=${pageSize},title=${title})}">
+                    <span th:text="${pageNo}"></span>
+                </a>
+            </li>
+            <li th:if="${not isLastPage}">
+                <a th:if="${not isLastPage}" th:href="@{${onlinePathValue+'/suggestion/list'}(pageNum=${pageNum+1},pageSize=${pageSize},title=${title})}">下一页</a>
+            </li>
+        </ul>
+</div>
+
+<div class="theme-popover">
+    <div class="theme-poptit">
+        <a href="javascript:;" title="关闭" class="close">×</a>
+    </div>
+    <div class="record" id="result">
+    <ul class="content" >
+
+    </ul>
+    </div>
+
+    <div class='suggestion'>
+            <input type="hidden" id="devId" name="devId" placeholder="设备id" />
+            <input type="hidden" id="roleType" name="roleType" value="1" />
+            <textarea name="content" id="content" cols="90" rows="10" placeholder="回复"></textarea><br />
+            <input type="button" id="add" value="提交" />
+    </div>
+</div>
+
+<div class="theme-popover-mask"></div>
+
+<input type="hidden" th:value="${onlinePathValue}" id="onlinePathValue"/>
+
+
+</body>
+<script th:inline="javascript">
+
+    $(function(){
+        var onlinePathValue=$("#onlinePathValue").val();
+        var listUrl = onlinePathValue+"/suggestion/list?t="+new Date().getTime();
+
+        $(".detail_url").click(function(){
+            $('.theme-popover-mask').fadeIn(100);
+            $('.theme-popover').slideDown(200);
+            var devId= $(this).attr("title");
+            $("#devId").val(devId);
+            var url = onlinePathValue+'/suggestion/records?devId='+ devId + "&roleType=1"
+            $.ajax({
+                url:url,
+                type:'post',
+                dataType:'json',
+                success:function(resp){
+                    $('.record ul li').remove();
+                    var list=resp.data;
+                    //获取数据成功后动态添加到页面中
+                    for(i=0;i<list.length;i++){
+                        var textValue='';
+                        if(list[i].roleType==1){
+                            textValue='<li class="right"><img class="imgright" src="'+onlinePathValue+'/favicon.ico"><span class="imgright">'+list[i].content+'</span></li>';
+                        }else {
+                            textValue='<li class="left"><img class="imgleft"  src="https://www.xttblog.com/wp-content/uploads/2016/03/123.png"><span class="spanleft"> '+list[i].content+'</span></li>';
+                        }
+                        $('.record ul').append(textValue);
+                    }
+                    $("#result").scrollTop($("#result")[0].scrollHeight);
+                }
+            });
+        });
+
+        $('.theme-poptit .close').click(function(){
+            $('.theme-popover-mask').fadeOut(100);
+            $('.theme-popover').slideUp(200);
+            window.location.href=listUrl
+        })
+
+        $("#add").click(function(){
+            var devId = $("#devId").val();
+            var content = $("#content").val();
+            var url = onlinePathValue+'/suggestion/publish?devId='+ devId + "&roleType=1&content="+content;
+            $.ajax({
+                url:url,
+                type:'post',
+                dataType:'json',
+                success:function(resp){
+                    var textValue='<li class="right"><img class="imgright" src="'+onlinePathValue+'/favicon.ico"><span class="imgright">'+content+'</span></li>';
+                        $('.record ul').append(textValue);
+                    $("#content").val("");
+                    $("#result").scrollTop($("#result")[0].scrollHeight);
+                }
+            });
+        });
+    })
+</script>
+
+</html>

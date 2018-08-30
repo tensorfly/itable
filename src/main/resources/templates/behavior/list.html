@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>行为列表</title>
+    <script th:src="@{/jquery.min.js}" ></script>
+    <script th:src="@{/jquery-1.9.1.min.js}" ></script>
+    <link th:href="@{/list_copy.css}" rel="stylesheet" type="text/css" />
+    <!-- S  CSS -->
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        table {
+            border: 1px solid #3bafda;
+            margin: 100px auto;
+            text-align: center;
+            border-collapse: collapse;
+        }
+
+        table th {
+            border: 1px solid #3bafda;
+            padding: 10px;
+        }
+
+        table td {
+            border: 1px solid #48cfad;
+            padding: 4px 10px;
+        }
+        .openWindow {
+            font-size: 20px;
+            color: white;
+            background-color: #357AE8;
+        }
+    </style>
+</head>
+<body>
+<!-- S   行为列表 -->
+<table id="tableId">
+    <caption> 行为列表</caption>
+    <thead class="header">
+    <tr>
+        <th>序号</th>
+        <th>id</th>
+        <th>名称</th>
+        <th>创建时间</th>
+        <th>更新时间</th>
+        <th>操作</th>
+    </tr>
+    </thead>
+    <tbody class="list">
+
+    </tbody>
+</table>
+
+<input type="button" class="openWindow"  value="新增" />
+<a href="/behavior/score/listPage" target="_blank">评分表</a>
+<div class="theme-popover">
+    <div class="theme-poptit">
+        <a href="javascript:;" title="关闭" class="close">×</a>
+    </div>
+
+    <div class='suggestion'>
+        <input type="hidden" id="id" name="id" placeholder="行为id" />
+        <input type="text" id="name" name="name" placeholder="行为名称" />
+        <input type="button" id="add" value="提交" />
+    </div>
+</div>
+
+
+<!-- S   课程表 -->
+</body>
+<script type="text/javascript">
+    $(function () {
+        var url = '/behavior/list';
+        $.ajax({
+            url: url,
+            type: 'get',
+            dataType: 'json',
+            success: function (resp) {
+                var flag = resp.success;
+
+                if (flag) {
+                    var list = resp.data;
+                    //获取数据成功后动态添加到页面中
+                    var textValue = '';
+                    for (var i = 0; i < list.length; i++) {
+                        var number = i+1;
+                        var createtime = list[i].createtime.substr(0,list[i].createtime.length-2);
+                        var updatetime = list[i].updatetime.substr(0,list[i].updatetime.length-2);
+                        textValue += "<tr><td>" + number + "</td>"
+                        textValue += "<td>" + list[i].behaviorId + "</td>"
+                        textValue += "<td>" + list[i].name + "</td>"
+                        textValue += "<td>" + createtime + "</td>"
+                        textValue += "<td>" + updatetime + "</td>"
+                        textValue += "<td><a class='edit' href='javascript:;' data-behaviorId='"+list[i].behaviorId+"' data-name='"+list[i].name+"' onclick=\"edit('"+list[i].behaviorId+"','"+list[i].name+"')\">编辑</a>&nbsp;&nbsp;&nbsp;&nbsp;"
+                        textValue += "<a class='delete' href='javascript:;' data-behaviorId='"+list[i].behaviorId+"' onclick=\"deleteDate('"+list[i].behaviorId+"')\">删除</a></td>"
+                        textValue += "</tr>";
+                    }
+
+                    $('.list').append(textValue);
+                }
+            }
+        });
+
+        $(".openWindow").click(function(){
+            $('.theme-popover-mask').fadeIn(100);
+            $('.theme-popover').slideDown(200);
+        });
+
+        $('.theme-poptit .close').click(function(){
+            $('.theme-popover-mask').fadeOut(100);
+            $('.theme-popover').slideUp(200);
+            window.location.reload();
+        })
+
+        $("#add").click(function(){
+            var id = $("#id").val();
+            var name = $("#name").val();
+            var url = '';
+            if(null == id || id=='') {
+                url = '/behavior/add?name='+ name;
+            }else {
+                url = '/behavior/edit?name='+ name + '&behaviorId='+id;
+            }
+            $.ajax({
+                url:url,
+                type:'post',
+                dataType:'json',
+                success:function(resp){
+                    var flag = resp.success;
+                    if(flag){
+                        window.location.reload();
+                    }else {
+                        alert(resp.message);
+                    }
+                }
+            });
+
+        });
+
+
+    });
+
+    function edit(behaviorId,name){
+        $("#id").val(behaviorId);
+        $("#name").val(name);
+        $('.theme-popover-mask').fadeIn(100);
+        $('.theme-popover').slideDown(200);
+    };
+
+    function deleteDate(behaviorId){
+        var deleteUrl = '/behavior/delete?behaviorId='+behaviorId
+        $.ajax({
+            url:deleteUrl,
+            type:'post',
+            dataType:'json',
+            success:function(resp){
+                alert(resp.message);
+            }
+        });
+        window.location.reload();
+    }
+
+</script>
+</html>
